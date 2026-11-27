@@ -1,0 +1,11 @@
+# Credenciales privadas de las cuentas semilla (nunca se versionan)
+backend/data/seed_credentials.private.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node
+node_modules/
+dist/
