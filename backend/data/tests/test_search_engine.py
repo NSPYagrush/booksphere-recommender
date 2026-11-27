@@ -348,9 +348,15 @@ class RealCatalogTests(unittest.TestCase):
             recent_24_25 = conn.execute("SELECT COUNT(*) FROM books WHERE publish_year >= 2024").fetchone()[0]
             self.assertGreater(recent_24_25, 2500, f"Se esperaban >2500 libros 2024–2025, encontrados: {recent_24_25}")
             old_ext = conn.execute(
-                "SELECT COUNT(*) FROM books WHERE in_recommender = 0 AND (publish_year IS NULL OR publish_year < 2024)"
+                "SELECT COUNT(*) FROM books "
+                "WHERE in_recommender = 0 AND catalog_source = 'openlibrary_curated' "
+                "AND (publish_year IS NULL OR publish_year < 2024)"
             ).fetchone()[0]
-            self.assertEqual(old_ext, 0, "Todo libro in_recommender=0 debe ser reciente (>=2024)")
+            self.assertEqual(
+                old_ext,
+                0,
+                "Todo libro reciente de Open Library (openlibrary_curated, in_recommender=0) debe ser >=2024",
+            )
             low_amz = conn.execute(
                 "SELECT COUNT(*) FROM books WHERE catalog_source = 'amazon_2023' AND avg_rating < 3.8"
             ).fetchone()[0]

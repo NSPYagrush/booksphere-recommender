@@ -24,16 +24,16 @@ Backend API (FastAPI + Uvicorn :8000)
    │                          • Nivel 3 (Hibridación): Cold Start (géneros + pop.) / Híbrido adaptativo
    ├── community.py      ──► Vecindario MSD (Top 10 público) y Favoritos de la Comunidad
    ├── evaluation.py     ──► Benchmark offline 80/20 estratificado por usuario (5 modelos)
-   ├── etl_seed.py       ──► Escaneo completo Amazon Books 2023 (12,000) + enriquecimiento
-   ├── enrich_catalog.py ──► Ampliación offline Open Library (+3,000 libros hasta 2025, in_recommender=0)
+   ├── etl_seed.py       ──► Escaneo completo Amazon Books 2023 + enriquecimiento
+   ├── enrich_catalog.py ──► Ampliación offline Open Library (in_recommender=0)
    └── database.py       ──► Persistencia local en SQLite (booksphere_community.db)
 ```
 
 ### Arquitectura de Catálogo en Dos Niveles (`in_recommender`)
-* **Nivel 1 — Núcleo Recomendador (`in_recommender = 1`, 12,000 libros):**
-  * **10,871 obras únicas** deduplicadas en dos capas de Amazon Reviews 2023 (escaneo completo de `Books.jsonl` 2.58 GB y `Books.csv` 0.51 GB) con calidad mínima **`avg_rating >= 3.8★`**, exclusión de formatos no-libro (`CD`, `Box Set`, `Coloring Book`, `Workbook`, `Flash Cards`, `Sound Book`, paquetes multi-título) y estandarización de autores/iniciales (`C. S. Lewis`, `George R. R. Martin`, `R. F. Kuang`, `J. K. Rowling`) (`450` usuarios, `35,419` interacciones reales 5-core sobre `3,141` obras; `8,859` libros en cola larga cubiertos por TF-IDF).
-  * **+1,129 libros promovidos vía Open Library** (`catalog_source = 'openlibrary_core'`): obras originalmente en **español** de autores hispanohablantes (sin traducciones al inglés), clásicos y autores contemporáneos faltantes, y títulos con **`>= 25` votos globales**.
-* **Nivel 2 — Catálogo Ampliado Reciente (`in_recommender = 0`, 3,000 libros):** lanzamientos **`2024–2025`** con `< 25` votos (`catalog_source = 'openlibrary_curated'`, `3,014` títulos `>= 2024` en total en la BD). Son 100 % buscables (incluidas *stopwords* bilingües EN/ES) y agregables a `reading_list` sin alterar el recomendador ni el benchmark 80/20.
+* **Nivel 1 — Núcleo Recomendador (`in_recommender = 1`, 11,549 libros):**
+  * **10,842 obras únicas** deduplicadas de Amazon Reviews 2023 (`catalog_source = 'amazon_2023'`) con calidad mínima **`avg_rating >= 3.8★`**, exclusión de formatos no-libro (`CD`, `Box Set`, `Coloring Book`, `Workbook`, `Flash Cards`, `Sound Book`, paquetes multi-título) y estandarización de autores/iniciales (`C. S. Lewis`, `George R. R. Martin`, `R. F. Kuang`, `J. K. Rowling`) (`450` usuarios, `35,388` interacciones reales sobre `3,136` obras; `8,413` libros en cola larga cubiertos por TF-IDF).
+  * **+707 libros curados promovidos al núcleo:** `628` obras vía Open Library (`catalog_source = 'openlibrary_core'`, incluyendo literatura originalmente en **español** de autores hispanohablantes, clásicos y autores contemporáneos), `5` títulos adicionales (`catalog_source = 'openlibrary_curated'`) y `74` títulos de sagas curadas manualmente (`catalog_source = 'manual_curated'`).
+* **Nivel 2 — Catálogo Ampliado (`in_recommender = 0`, 3,451 libros):** compuesto por **`2,977`** lanzamientos recientes **`2024–2025`** (`catalog_source = 'openlibrary_curated'`), **`445`** obras complementarias de Open Library (`catalog_source = 'openlibrary_core'`) y **`29`** volúmenes de sagas curadas manualmente (`catalog_source = 'manual_curated'`), alcanzando **`3,028` títulos publicados desde 2024 (`1508–2026`)**. Son 100 % buscables (incluidas *stopwords* bilingües EN/ES) y agregables a `reading_list` sin alterar el recomendador ni el benchmark 80/20.
 
 ### Reglas de Negocio Clave
 * **Votos implícitos temporales:** Si un libro en `reading_list` no tiene calificación explícita (`1–5★`), el recomendador asigna un voto implícito temporal según su estado: `por_leer = 3.0★`, `leyendo = 3.7★`, `leido = 4.0★`. Al calificar explícitamente, la nota de usuario prevalece.
@@ -57,23 +57,23 @@ proyecto_final_recomendador/
 ├── backend/
 │   ├── requirements.txt
 │   ├── data/
-│   │   ├── booksphere_community.db     # Base SQLite curada (15,000 libros 1508–2025, 450 usuarios, 35,419 ratings)
-│   │   └── .gitkeep
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py                     # Servidor FastAPI y endpoints REST (/docs)
-│   │   ├── database.py                 # Esquema SQLite (in_recommender, catalog_source) y PBKDF2-SHA256
-│   │   ├── etl_seed.py                 # Streaming completo Amazon Reviews 2023 (12k) + paso offline [4/4]
-│   │   ├── enrich_catalog.py           # Enriquecimiento offline vía Open Library (+3k libros hasta 2025+)
-│   │   ├── openlibrary_client.py       # Sanitización estricta de texto/puntuación y cliente Open Library
-│   │   ├── search_engine.py            # Buscador IR (BM25 + char n-grams + filtros) sobre los 15k libros
-│   │   ├── recommender.py              # Recomendador híbrido de 3 niveles (aislado en in_recommender=1)
-│   │   ├── community.py                # Vecindario de lectores (Top 10) y favoritos
-│   │   └── evaluation.py               # Evaluación offline 80/20 (MAE, RMSE, P@K, Recall@K, NDCG@K)
-│   └── tests/
-│       ├── test_search_engine.py       # Pruebas del buscador IR y calidad del catálogo (15k libros)
-│       ├── test_recommender.py         # Pruebas del recomendador híbrido, invarianza y reglas implícitas
-│       └── test_api_and_community.py   # Pruebas API FastAPI, comunidad Top 10 y evaluación
+│   │   ├── booksphere_community.db     # Base SQLite curada (15,000 libros 1508–2026, 450 usuarios, 35,388 ratings)
+│   │   ├── .gitkeep
+│   │   └── tests/
+│   │       ├── test_search_engine.py   # Pruebas del buscador IR y calidad del catálogo
+│   │       ├── test_recommender.py     # Pruebas del recomendador híbrido, invarianza y reglas implícitas
+│   │       └── test_api_and_community.py # Pruebas API FastAPI, comunidad Top 10 y evaluación
+│   └── app/
+│       ├── __init__.py
+│       ├── main.py                     # Servidor FastAPI y endpoints REST (/docs)
+│       ├── database.py                 # Esquema SQLite (in_recommender, catalog_source) y PBKDF2-SHA256
+│       ├── etl_seed.py                 # Streaming completo Amazon Reviews 2023 + paso offline [4/4]
+│       ├── enrich_catalog.py           # Enriquecimiento offline vía Open Library
+│       ├── openlibrary_client.py       # Sanitización estricta de texto/puntuación y cliente Open Library
+│       ├── search_engine.py            # Buscador IR (BM25 + char n-grams + filtros) sobre los 15,000 libros
+│       ├── recommender.py              # Recomendador híbrido de 3 niveles (aislado en in_recommender=1)
+│       ├── community.py                # Vecindario de lectores (Top 10) y favoritos
+│       └── evaluation.py               # Evaluación offline 80/20 (MAE, RMSE, P@K, Recall@K, NDCG@K)
 └── frontend/
     ├── package.json
     ├── vite.config.js                  # Proxy /api -> 127.0.0.1:8000
@@ -110,7 +110,7 @@ npm install
 ```
 
 ### Paso 3 — Base de datos (Opcional: reconstruir 100 % desde fuentes remotas)
-La base de datos curada `backend/data/booksphere_community.db` (~22.3 MB) ya viene lista con **15,000 libros únicos** (`0 BLOB`, `0 ::`, iniciales de autor estandarizadas, español original en autores hispanos). Si deseas regenerarla desde cero mediante streaming HTTPS completo de **Amazon Reviews 2023** seguido del enriquecimiento offline vía **Open Library**:
+La base de datos curada `backend/data/booksphere_community.db` (~22.4 MB) ya viene lista con **15,000 libros únicos** (`0 BLOB`, `0 ::`, iniciales de autor estandarizadas, español original en autores hispanos). Si deseas regenerarla desde cero mediante streaming HTTPS completo de **Amazon Reviews 2023** seguido del enriquecimiento offline vía **Open Library**:
 
 ```powershell
 cd backend
@@ -157,7 +157,7 @@ La suite incluye pruebas unitarias y de integración sobre bases sintéticas ais
 
 ```powershell
 cd backend
-python -m unittest discover -s tests -t . -v
+python -m unittest discover -s data/tests -t . -v
 ```
 
 ---
@@ -176,12 +176,12 @@ python -c "import json; from app.recommender import HybridBookRecommender; from 
 * Abrir en navegador o `curl`: `http://127.0.0.1:8000/api/evaluation`
 * Para forzar recálculo: `http://127.0.0.1:8000/api/evaluation?recompute=true`
 
-### Resultados Referenciales del Benchmark (Amazon Reviews 2023 Full Core · 120 usuarios · 33,567 train · 1,837 test)
+### Resultados Referenciales del Benchmark (Catálogo curado 15,000 libros · 120 usuarios · 33,541 train · 1,832 test · 2,562 candidatos)
 
 | Modelo | MAE ↓ | RMSE ↓ | Cob. Pred. | Precision@5 ↑ | Precision@10 ↑ | Recall@10 ↑ | NDCG@10 ↑ | Cob. Catálogo |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| Baseline (Media Usuario-Ítem) | 0.6394 | 0.8385 | 100.0 % | 0.0133 | 0.0100 | 0.0098 | 0.0110 | 5.56 % |
-| CF — Distancia de Chebyshev ($L_\infty$) | 0.6989 | 0.9300 | 78.66 % | 0.0517 | 0.0492 | 0.0409 | 0.0478 | 10.53 % |
-| CF — MSD / JMSD | 0.6599 | 0.8771 | 86.72 % | 0.0967 | 0.1008 | 0.0849 | 0.1021 | 14.02 % |
-| ML — Factorización TruncatedSVD | 0.6670 | 0.8602 | 100.0 % | 0.0167 | 0.0108 | 0.0107 | 0.0140 | 19.89 % |
-| **Recomendador Híbrido Propuesto** | **0.6448** | **0.8466** | **100.0 %** | **0.1533** | **0.1358** | **0.1125** | **0.1442** | **15.97 %** |
+| Baseline (Media Usuario-Ítem) | 0.6340 | 0.8354 | 100.0 % | 0.0150 | 0.0125 | 0.0112 | 0.0128 | 5.74 % |
+| CF — Distancia de Chebyshev ($L_\infty$) | 0.6820 | 0.9102 | 77.07 % | 0.0450 | 0.0483 | 0.0400 | 0.0490 | 10.50 % |
+| CF — MSD / JMSD | 0.6572 | 0.8757 | 86.19 % | 0.1083 | 0.1017 | 0.0825 | 0.1117 | 14.48 % |
+| ML — Factorización TruncatedSVD | 0.6639 | 0.8607 | 100.0 % | 0.0167 | 0.0167 | 0.0121 | 0.0173 | 20.92 % |
+| **Recomendador Híbrido Propuesto** | **0.6428** | **0.8473** | **100.0 %** | **0.1683** | **0.1392** | **0.1146** | **0.1466** | **16.20 %** |
