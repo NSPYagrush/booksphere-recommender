@@ -48,6 +48,8 @@ export default function BookCard({
   userEntry,
   recommendation,
   similarity,
+  searchRelevance,
+  searchReason,
   rankBadge,
   extraMeta,
   onSelectBook,
@@ -235,6 +237,39 @@ export default function BookCard({
           </div>
         )}
 
+        {/* Bloque de relevancia IR en resultados del buscador (mismo estilo visual del recomendador) */}
+        {!recommendation && !similarity && searchRelevance != null && (() => {
+          const relPct = Math.min(100, Math.max(0, Math.round(searchRelevance * 100)));
+          return (
+            <div className="mt-3 rounded-xl bg-stone-50 px-3 py-2 text-[11px] leading-snug text-stone-600 ring-1 ring-stone-200/70">
+              {searchReason && (
+                <div className="flex items-start gap-1.5">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" />
+                  <span>{searchReason}</span>
+                </div>
+              )}
+
+              <div
+                className={`${searchReason ? 'mt-2 border-t border-stone-200/70 pt-2' : ''
+                  } space-y-1.5 text-[10px] text-stone-600`}
+              >
+                <div title="Grado de coincidencia de tu búsqueda con título, autor y sinopsis">
+                  <div className="flex items-center justify-between font-medium">
+                    <span>Relevancia</span>
+                    <span className="font-semibold text-stone-800">{relPct}%</span>
+                  </div>
+                  <div className="mt-0.5 h-1 w-full overflow-hidden rounded-full bg-stone-200">
+                    <div
+                      className="h-full rounded-full bg-brand-600"
+                      style={{ width: `${relPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Metadatos comunitarios opcionales (Favoritos / Top 10 vecino) */}
         {extraMeta && <div className="mt-2.5">{extraMeta}</div>}
 
@@ -311,8 +346,8 @@ export default function BookCard({
                       >
                         <Star
                           className={`h-4 w-4 ${active
-                              ? 'fill-amber-400 text-amber-500'
-                              : 'text-stone-300 hover:text-amber-400'
+                            ? 'fill-amber-400 text-amber-500'
+                            : 'text-stone-300 hover:text-amber-400'
                             }`}
                         />
                       </button>

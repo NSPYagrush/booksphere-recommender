@@ -234,12 +234,13 @@ export default function HomePage({
                     key={book.book_id}
                     book={book}
                     userEntry={readingMap[book.book_id]}
-                    extraMeta={
-                      book.relevance != null && (
-                        <span className="inline-block rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
-                          Relevancia IR: {Math.round(book.relevance * 100)}%
-                        </span>
-                      )
+                    searchRelevance={book.relevance}
+                    searchReason={
+                      book.relevance != null
+                        ? searchResult.exact
+                          ? `Coincidencia con «${searchResult.query?.trim() || query.trim()}»`
+                          : `Coincidencia con «${searchResult.query?.trim() || query.trim()}»`
+                        : null
                     }
                     onSelectBook={onSelectBook}
                     onUpsertList={onUpsertList}
