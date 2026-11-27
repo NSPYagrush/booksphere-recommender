@@ -3,8 +3,8 @@
 Aplicación web comunitaria para el descubrimiento literario que integra un **buscador de Recuperación de Información (BM25 + TF-IDF de n-gramas)** con un **Sistema de Recomendación Híbrido** basado en filtrado colaborativo en memoria (**MSD / JMSD / Chebyshev**), factorización de matrices (**TruncatedSVD**), filtrado basado en contenido (**TF-IDF + Similitud del Coseno**) y popularidad bayesiana.
 
 > **Asignatura:** Web Social — Departamento de Telemática, Universidad del Cauca.
-> **Docente:** Cristhian Figueroa Martinez
-> **Estudiante:** Nicolás Sánchez Perea
+ **Docente:** Cristhian Figueroa Martinez
+ **Estudiante:** Nicolás Sánchez Perea
 
 ---
 
