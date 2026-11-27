@@ -3,8 +3,8 @@
 Aplicación web comunitaria para el descubrimiento literario que integra un **buscador de Recuperación de Información (BM25 + TF-IDF de n-gramas)** con un **Sistema de Recomendación Híbrido** basado en filtrado colaborativo en memoria (**MSD / JMSD / Chebyshev**), factorización de matrices (**TruncatedSVD**), filtrado basado en contenido (**TF-IDF + Similitud del Coseno**) y popularidad bayesiana.
 
 > **Asignatura:** Web Social — Departamento de Telemática, Universidad del Cauca.
-> **Docente:** Cristhian Figueroa Martinez
-> **Estudiante:** Nicolás Sánchez Perea
+ **Docente:** Cristhian Figueroa Martinez
+ **Estudiante:** Nicolás Sánchez Perea
 
 ---
 
@@ -57,7 +57,7 @@ proyecto_final_recomendador/
 ├── backend/
 │   ├── requirements.txt
 │   ├── data/
-│   │   ├── booksphere_community.db     # Base SQLite curada (15,000 libros 1508–2025, 450 usuarios, 35,419 ratings)
+│   │   ├── booksphere_community.db     # Base SQLite curada (15,000 libros, 450 usuarios, 35,419 ratings)
 │   │   └── .gitkeep
 │   ├── app/
 │   │   ├── __init__.py
